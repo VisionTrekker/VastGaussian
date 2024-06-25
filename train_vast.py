@@ -308,10 +308,11 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
 
 
 def train_main():
-    """重写训练主函数
-    将原先隐式的参数进行显式化重写，方便阅读和调参
-    代码主体与原先仍保持一致
-    参数详情见：arguments/parameters.py
+    """
+    重写训练主函数：
+        将原先隐式的参数进行显式化重写，方便阅读和调参
+        代码主体与原先仍保持一致
+        参数详情见：arguments/parameters.py
     """
     parser = ArgumentParser(description="Training Script Parameters")
     # 三个模块里的参数
@@ -319,10 +320,13 @@ def train_main():
     op, before_extract_op = extract(lp, OptimizationParams(parser).parse_args())
     pp, before_extract_pp = extract(before_extract_op, PipelineParams(parser).parse_args())
 
+    # 需要进行曼哈顿对齐
     if lp.manhattan and lp.plantform == "threejs":
-        man_trans = create_man_rans(lp.pos, lp.rot)
+        # 平台为threejs，则pos和rot的参数个数均为三个
+        man_trans = create_man_rans(lp.pos, lp.rot) # 经过曼哈顿对齐后的点云坐标 相对于 初始点云坐标的变换矩阵 T_初始_曼哈顿对齐后
         lp.man_trans = man_trans
-    elif lp.manhattan and lp.plantform == "cloudcompare":  # 如果处理平台为cloudcompare，则rot为旋转矩阵
+    elif lp.manhattan and lp.plantform == "cloudcompare":
+        # 处理平台为cloudcompare，则rot为旋转矩阵
         rot = np.array(lp.rot).reshape([3, 3])
         man_trans = np.zeros((4, 4))
         man_trans[:3, :3] = rot
@@ -335,12 +339,10 @@ def train_main():
     parser.add_argument("--port", type=int, default=6009)  # 用于GUI服务器的端口，默认为6009。
     parser.add_argument("--debug_from", type=int, default=-1)  # 调试缓慢。您可以指定一个迭代(从0开始)，之后上述调试变为活动状态。
     parser.add_argument("--detect_anomaly", default=False)  #
-    parser.add_argument("--test_iterations", nargs="+", type=int,
-                        default=[100, 1000, 7_000, 10_000, 30_000])  # 训练脚本在测试集上计算L1和PSNR的间隔迭代，默认为7000 30000。
-    parser.add_argument("--save_iterations", nargs="+", type=int,
-                        default=[100, 7_000, 30_000, 60_000])  # 训练脚本保存高斯模型的空格分隔迭代，默认为7000 30000 <迭代>。
+    parser.add_argument("--test_iterations", nargs="+", type=int, default=[100, 1000, 7_000, 10_000, 30_000])  # 训练脚本在测试集上计算L1和PSNR的间隔迭代，默认为7000 30000。
+    parser.add_argument("--save_iterations", nargs="+", type=int, default=[100, 7_000, 30_000, 60_000])  # 训练脚本保存高斯模型的空格分隔迭代，默认为7000 30000 <迭代>。
     parser.add_argument("--quiet", default=False)  # 标记以省略写入标准输出管道的任何文本。
-    parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])  # 空格分隔的迭代，在其中存储稍后继续的检查点，保存在模型目录中。
+    parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[30_000])  # 空格分隔的迭代，在其中存储稍后继续的检查点，保存在模型目录中。
     parser.add_argument("--start_checkpoint", type=str, default=None)  # 路径保存检查点继续训练。
     args = parser.parse_args()
     args.save_iterations.append(args.iterations)
@@ -361,13 +363,14 @@ def train_main():
     tb_writer = prepare_output_and_logger(lp)
 
     # 对大场景进行分块
-    scene_info = sceneLoadTypeCallbacks["Partition"](lp.source_path, lp.images, lp.man_trans)  # 得到一个场景的所有参数信息
+    # 得到一个场景的所有参数信息（去除了一些离群点）
+    scene_info = sceneLoadTypeCallbacks["Partition"](lp.source_path, lp.images, lp.man_trans)
     train_cameras = cameraList_from_camInfos_partition(scene_info.train_cameras, args=lp)
     DataPartitioning = ProgressiveDataPartitioning(scene_info, train_cameras, lp.model_path,
                                                    lp.m_region, lp.n_region, lp.extend_rate, lp.visible_rate)
     partition_result = DataPartitioning.partition_scene
     # 保存每个partition的图片名称到txt文件
-    client = 0
+    client = 0  # 一个 partition，一个client
     partition_id_list = []
     for partition in partition_result:
         partition_id_list.append(partition.partition_id)
@@ -383,12 +386,13 @@ def train_main():
         client += 1
     del partition_result  # 释放内存
 
-    training_round = client // lp.num_gpus
+    training_round = client // lp.num_gpus  # 每块GPU分配的client的个数
     remainder = client % lp.num_gpus  # 判断分块数是否可以被GPU均分，如果不可以均分则需要单独处理
 
     # Main Loops
-    for i in range(training_round):
-        partition_pool = [i + training_round * j for j in range(lp.num_gpus)]
+    # 在两张卡上分别训练 各个partition
+    for i in range(training_round): # 假设9个块，2张卡，则training_round=4, remainder=1, 则i: 0, 1, 2, 3
+        partition_pool = [i + training_round * j for j in range(lp.num_gpus)]   # [0, 4] / [1, 5] / [2, 6] / [3, 7]
 
         processes = []
         for index, device_id in enumerate(range(lp.num_gpus)):
@@ -407,7 +411,7 @@ def train_main():
             # processes = []
 
         torch.cuda.empty_cache()
-
+    # 如果还有partition未分配到GPU上，则单独处理
     if remainder != 0:
         partition_pool = [lp.num_gpus*training_round + i for i in range(remainder)]
         processes = []
@@ -438,8 +442,6 @@ def train_main():
         seamless_merge(lp.model_path, point_cloud_dir)
 
     print("All Done!")
-
-
 
 if __name__ == "__main__":
     train_main()

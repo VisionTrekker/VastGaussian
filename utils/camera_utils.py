@@ -56,10 +56,17 @@ def loadCam(args, id, cam_info, resolution_scale):
                   image_name=cam_info.image_name, uid=id, data_device=args.data_device, params=cam_info.params)
 
 def loadCamPartition(args, id, cam_info, image_width, image_height):
+    """
 
+        args:
+        id: 某个训练相机的id
+        cam_info: 某个相机本身
+        image_width:
+        image_height:
+        Returns:
+    """
     # image_width //= args.resolution
     # image_height //= args.resolution
-    
     return SimpleCamera(
         colmap_id=cam_info.uid, R=cam_info.R, T=cam_info.T, 
         FoVx=cam_info.FovX, FoVy=cam_info.FovY, image_name=cam_info.image_name,
@@ -75,8 +82,14 @@ def cameraList_from_camInfos(cam_infos, resolution_scale, args):
     return camera_list
 
 def cameraList_from_camInfos_partition(cam_infos, args):
-    camera_list = []
+    """
 
+        cam_infos: 所有场景的训练相机
+        args:
+        returns:
+    """
+    camera_list = []
+    # 遍历的每个训练相机
     for id, c in enumerate(cam_infos):
         image_width = c.width
         image_height = c.height

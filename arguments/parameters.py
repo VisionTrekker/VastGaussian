@@ -17,6 +17,7 @@ import numpy as np
     因此我将所有的参数摘出来，重写了配置文件，只是修改了参数的呈现方式，
     并没有对代码整体的结构进行修改
 """
+
 def create_man_rans(position, rotation):
 
     # The angle is reversed because the counterclockwise direction is defined as negative in three.js
@@ -69,8 +70,6 @@ def ModelParams(parser):
 
     parser.add_argument("--num_gpus", type=int, default=1, help="if =1 train model on 1 GPU, if =n train model on n GPUs")
 
-
-
     return parser
 
 
@@ -110,8 +109,9 @@ def PipelineParams(parser):
 
 
 def extract(args1, args2):
-    """将args1的参数从args2中剔除
-    :return 返回剔除参数后的args2, 以及没有剔除前的args2
+    """
+    将args1的参数从args2中剔除
+        return 返回剔除参数后的args2, 以及没有剔除前的args2
     """
     args1_dict = vars(args1)
     args2_dict = vars(args2)

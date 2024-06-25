@@ -89,8 +89,8 @@ def getNerfppNorm(cam_info):
 def getNerfppNorm_partition(cameras):
     """
     为partition后的相机重新生成对应的相机尺寸
-    :param cameras:
-    :return:
+        cameras:
+        return:
     """
     def get_center_and_diag(cam_centers):
         cam_centers = np.vstack(cam_centers)
@@ -129,11 +129,11 @@ def readColmapCamerasPartition(cam_extrinsics, cam_intrinsics, images_folder, ma
         uid = intr.id  # 获取相机对应id
 
         if man_trans is None:
-            R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到世界->相机坐标的旋转矩阵
-            T = np.array(extr.tvec)  # 获取该图片的平移向量
+            R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到相机->世界坐标的旋转矩阵
+            T = np.array(extr.tvec)  # 获取该图片世界->相机坐标的平移向量
         else:
-            R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到世界->相机坐标的旋转矩阵
-            T = np.array(extr.tvec)  # 获取该图片的平移向量
+            R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到相机->世界坐标的旋转矩阵
+            T = np.array(extr.tvec)  # 获取该图片世界->相机坐标的平移向量
 
             W2C = np.zeros((4, 4))
             W2C[:3, :3] = R.transpose()
@@ -142,16 +142,16 @@ def readColmapCamerasPartition(cam_extrinsics, cam_intrinsics, images_folder, ma
             W2nC = W2C @ np.linalg.inv(man_trans)   # 相机跟着点云旋转平移后得到新的相机坐标系nC
 
             R = W2nC[:3, :3]
-            R = R.transpose()
-            T = W2nC[:3, -1]
+            R = R.transpose()   # nC->世界的旋转矩阵
+            T = W2nC[:3, -1]    # 世界->nC的平移向量
 
         params = np.array(intr.params)
 
-        if intr.model == "SIMPLE_PINHOLE":  # 使用SIMPLE_PINHOLE相机模型，适用于非畸变图像，它有一个焦距参数，也可以理解为fx=fy
+        if intr.model == "SIMPLE_PINHOLE" or intr.model == "SIMPLE_RADIAL":  # 使用SIMPLE_PINHOLE相机模型，适用于非畸变图像，它只有一个焦距参数，也可以理解为fx=fy
             focal_length_x = intr.params[0]  # 相机内参
             FovY = focal2fov(focal_length_x, height)
             FovX = focal2fov(focal_length_x, width)
-        elif intr.model == "PINHOLE":  # 使用PINHOLE相机模型，适用于畸变图像，它有两个焦距参数
+        elif intr.model == "PINHOLE":  # 使用PINHOLE相机模型，适用于畸变图像，它有两个焦距参数，fx、fy
             focal_length_x = intr.params[0]  # 获取x轴焦距
             focal_length_y = intr.params[1]  # 获取y轴焦距
             FovY = focal2fov(focal_length_y, height)  # 获取垂直视角场  视场角Fov是指在成像场景中，相机可以接收影像的角度范围，也常被称为视野范围
@@ -161,7 +161,7 @@ def readColmapCamerasPartition(cam_extrinsics, cam_intrinsics, images_folder, ma
 
         image_path = os.path.join(images_folder, os.path.basename(extr.name))  # 获取该图片路径
         image_name = os.path.basename(image_path).split(".")[0]  # 获取该图片名称
-        image = None #此处不加载
+        image = None # 此处先不加载图片数据
 
         cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
                               image_path=image_path, image_name=image_name, width=width, height=height, params=params)
@@ -186,11 +186,11 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder, man_trans):
         uid = intr.id  # 获取相机对应id
 
         if man_trans is None:
-            R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到世界->相机坐标的旋转矩阵
-            T = np.array(extr.tvec)  # 获取该图片的平移向量
+            R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到相机->世界坐标的旋转矩阵
+            T = np.array(extr.tvec)  # 获取该图片世界->相机坐标的平移向量
         else:
-            R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到世界->相机坐标的旋转矩阵
-            T = np.array(extr.tvec)  # 获取该图片的平移向量
+            R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到相机->世界坐标的旋转矩阵
+            T = np.array(extr.tvec)  # 获取该图片世界->相机坐标的平移向量
 
             W2C = np.zeros((4, 4))
             W2C[:3, :3] = R.transpose()
@@ -199,16 +199,16 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder, man_trans):
             W2nC = W2C @ np.linalg.inv(man_trans)   # 相机跟着点云旋转平移后得到新的相机坐标系nC
 
             R = W2nC[:3, :3]
-            R = R.transpose()
-            T = W2nC[:3, -1]
+            R = R.transpose()   # nC->世界的旋转矩阵
+            T = W2nC[:3, -1]    # 世界->nC的平移向量
 
         params = np.array(intr.params)
 
-        if intr.model == "SIMPLE_PINHOLE":  # 使用SIMPLE_PINHOLE相机模型，适用于非畸变图像，它有一个焦距参数，也可以理解为fx=fy
+        if intr.model == "SIMPLE_PINHOLE" or intr.model == "SIMPLE_RADIAL":  # 使用SIMPLE_PINHOLE相机模型，适用于非畸变图像，它只有一个焦距参数，也可以理解为fx=fy
             focal_length_x = intr.params[0]  # 相机内参
             FovY = focal2fov(focal_length_x, height)
             FovX = focal2fov(focal_length_x, width)
-        elif intr.model == "PINHOLE":  # 使用PINHOLE相机模型，适用于畸变图像，它有两个焦距参数
+        elif intr.model == "PINHOLE":  # 使用PINHOLE相机模型，适用于畸变图像，它有两个焦距参数，fx、fy
             focal_length_x = intr.params[0]  # 获取x轴焦距
             focal_length_y = intr.params[1]  # 获取y轴焦距
             FovY = focal2fov(focal_length_y, height)  # 获取垂直视角场  视场角Fov是指在成像场景中，相机可以接收影像的角度范围，也常被称为视野范围
@@ -228,16 +228,17 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder, man_trans):
 
 
 def fetchPly(path, man_trans):
-    """这段代码定义了一个名为 fetchPly 的函数，用于读取并解析一个 PLY 文件，并返回一个 BasicPointCloud 对象。
-    函数接受一个参数 path，表示 PLY 文件的路径。
-    首先，使用 PlyData.read 方法读取指定路径的 PLY 文件，并将结果赋值给 plydata。
-    然后，从 plydata 中提取名为 'vertex' 的元素，表示点云中的顶点。
-    接着，从顶点元素中提取 'x'、'y'、'z' 三个属性，分别表示顶点的 x、y、z 坐标。
+    """
+    这段代码定义了一个名为 fetchPly 的函数，用于读取并解析一个 PLY 文件，并返回一个 BasicPointCloud 对象。
+        函数接受一个参数 path，表示 PLY 文件的路径。
+        首先，使用 PlyData.read 方法读取指定路径的 PLY 文件，并将结果赋值给 plydata。
+        然后，从 plydata 中提取名为 'vertex' 的元素，表示点云中的顶点。
+        接着，从顶点元素中提取 'x'、'y'、'z' 三个属性，分别表示顶点的 x、y、z 坐标。
         使用 np.vstack 方法将这三个属性堆叠在一起，并通过转置操作得到一个 (N, 3) 的矩阵 positions，其中 N 表示顶点的数量。
-    接下来，从顶点元素中提取 'red'、'green'、'blue' 三个属性，分别表示顶点的红、绿、蓝通道的颜色值。
+        接下来，从顶点元素中提取 'red'、'green'、'blue' 三个属性，分别表示顶点的红、绿、蓝通道的颜色值。
         使用 np.vstack 方法将这三个属性堆叠在一起，并通过除以 255.0 进行归一化，得到一个 (N, 3) 的矩阵 colors，其中 N 表示顶点的数量。
-    然后，从顶点元素中提取 'nx'、'ny'、'nz' 三个属性，分别表示顶点的法线向量的 x、y、z 分量。使用 np.vstack 方法将这三个属性堆叠在一起，得到一个 (N, 3) 的矩阵 normals，其中 N 表示顶点的数量。
-    最后，使用 positions、colors、normals 创建一个 BasicPointCloud 对象，并将其作为结果返回。
+        然后，从顶点元素中提取 'nx'、'ny'、'nz' 三个属性，分别表示顶点的法线向量的 x、y、z 分量。使用 np.vstack 方法将这三个属性堆叠在一起，得到一个 (N, 3) 的矩阵 normals，其中 N 表示顶点的数量。
+        最后，使用 positions、colors、normals 创建一个 BasicPointCloud 对象，并将其作为结果返回。
     """
     plydata = PlyData.read(path)
     vertices = plydata['vertex']  # 提取点云的顶点
@@ -392,10 +393,11 @@ def partition(path, images, man_trans):
             xyz, rgb, _ = read_points3D_text(txt_path)
         storePly(ply_path, xyz, rgb)
     pcd = fetchPly(ply_path, man_trans=man_trans)  # 得到稀疏点云中，各个3D点的属性信息
-    
+
+    # 删除点云中的离群点
     dist_threshold = 99
-    points, colors, normals = pcd.points, pcd.colors, pcd.normals
-    points_threshold = np.percentile(points[:, 1], dist_threshold) # use dist_ratio to exclude outliers
+    points, colors, normals = pcd.points, pcd.colors, pcd.normals   # 获取初始点云的 3D坐标，颜色，法线
+    points_threshold = np.percentile(points[:, 1], dist_threshold) # use dist_ratio to exclude outliers。计算点云沿Y轴的第99%的值，以此值为阈值去除离群点
     
     colors = colors[points[:, 1] < points_threshold]
     normals = normals[points[:, 1] < points_threshold]
