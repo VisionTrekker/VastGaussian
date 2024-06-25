@@ -95,9 +95,11 @@ def readColmapCamerasPartition(cam_extrinsics, cam_intrinsics, images_folder, ma
         uid = intr.id  # 获取相机对应id
 
         if man_trans is None:
+            # 不进行曼哈顿对齐
             R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到相机->世界坐标的旋转矩阵
             T = np.array(extr.tvec)  # 获取该图片世界->相机坐标的平移向量
         else:
+            # 点云坐标进行曼哈顿对齐
             R = np.transpose(qvec2rotmat(extr.qvec))  # 由四元数获取该图片的旋转矩阵，得到相机->世界坐标的旋转矩阵
             T = np.array(extr.tvec)  # 获取该图片世界->相机坐标的平移向量
 
@@ -114,16 +116,17 @@ def readColmapCamerasPartition(cam_extrinsics, cam_intrinsics, images_folder, ma
         params = np.array(intr.params)
 
         if intr.model == "SIMPLE_PINHOLE" or intr.model == "SIMPLE_RADIAL":  # 使用SIMPLE_PINHOLE相机模型，适用于非畸变图像，它只有一个焦距参数，也可以理解为fx=fy
-            focal_length_x = intr.params[0]  # 相机内参
+            focal_length_x = intr.params[0]
             FovY = focal2fov(focal_length_x, height)
             FovX = focal2fov(focal_length_x, width)
         elif intr.model == "PINHOLE":  # 使用PINHOLE相机模型，适用于畸变图像，它有两个焦距参数，fx、fy
-            focal_length_x = intr.params[0]  # 获取x轴焦距
-            focal_length_y = intr.params[1]  # 获取y轴焦距
+            focal_length_x = intr.params[0]
+            focal_length_y = intr.params[1]
             FovY = focal2fov(focal_length_y, height)  # 获取垂直视角场  视场角Fov是指在成像场景中，相机可以接收影像的角度范围，也常被称为视野范围
             FovX = focal2fov(focal_length_x, width)   # 获取水平视角场
         else:
-            assert False, "Colmap camera model not handled: only undistorted datasets (PINHOLE or SIMPLE_PINHOLE cameras) supported!"  # Colmap相机模型未处理：仅支持未失真的数据集（PINHOLE或SIMPLE_PINHOLE相机）！
+            # 仅支持未畸变的数据集（PINHOLE或SIMPLE_PINHOLE相机）！
+            assert False, "Colmap camera model not handled: only undistorted datasets (PINHOLE or SIMPLE_PINHOLE cameras) supported!"
 
         image_path = os.path.join(images_folder, os.path.basename(extr.name))  # 获取该图片路径
         image_name = os.path.basename(image_path).split(".")[0]  # 获取该图片名称
@@ -190,7 +193,7 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder, man_trans):
         image = Image.open(image_path)
 
         cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
-                              image_path=image_path, image_name=image_name, width=width, height=height, params=params)
+                              image_path=image_path, image_name=image_name, width=width, height=height)
         cam_infos.append(cam_info)  # 存储所有图片的 相机模型id，旋转矩阵 平移向量，视角场，图片数据，图片路径，图片名，图片宽高
     sys.stdout.write('\n')
     return cam_infos
@@ -270,7 +273,6 @@ def fetchPly(path, man_trans=None):
         然后，从顶点元素中提取 'nx'、'ny'、'nz' 三个属性，分别表示顶点的法线向量的 x、y、z 分量。使用 np.vstack 方法将这三个属性堆叠在一起，得到一个 (N, 3) 的矩阵 normals，其中 N 表示顶点的数量。
         最后，使用 positions、colors、normals 创建一个 BasicPointCloud 对象，并将其作为结果返回。
     """
-def fetchPly(path, man_trans=None):
     plydata = PlyData.read(path)
     vertices = plydata['vertex']  # 提取点云的顶点
     positions = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T  # 将x,y,z这三个坐标属性堆叠在一起
@@ -281,8 +283,7 @@ def fetchPly(path, man_trans=None):
         new_positions = np.dot(man_trans_R, positions.transpose()) + np.repeat(man_trans_T, positions.shape[0]).reshape(
             -1, positions.shape[0])
         positions = new_positions.transpose()
-    colors = np.vstack(
-        [vertices['red'], vertices['green'], vertices['blue']]).T / 255.0  # 将R,G,B三个颜色属性堆叠在一起，并除以255进行归一化
+    colors = np.vstack([vertices['red'], vertices['green'], vertices['blue']]).T / 255.0  # 将R,G,B三个颜色属性堆叠在一起，并除以255进行归一化
     normals = np.vstack([vertices['nx'], vertices['ny'], vertices['nz']]).T  # 提取顶点的三个法向量属性，并堆叠在一起
     return BasicPointCloud(points=positions, colors=colors, normals=normals)
 
@@ -426,7 +427,6 @@ def readColmapSceneInfoEval(path, images, man_trans, model_path):
 
 def partition(path, images, man_trans, eval, llffhold=83):
     # 读取整个场景的点云和相机参数，用于分块
-    # 读取所有图像的信息，包括相机内外参数，以及3D点云坐标
     try:
         cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.bin")  # 相机外参文件
         cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.bin")  # 相机内参文件
@@ -440,8 +440,7 @@ def partition(path, images, man_trans, eval, llffhold=83):
 
     reading_dir = os.path.join(path, "images")
     cam_infos_unsorted = readColmapCamerasPartition(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics,
-                                                    images_folder=reading_dir,
-                                                    man_trans=man_trans)  # 存储所有图片的 相机模型id，旋转矩阵 平移向量，视角场，图片数据，图片路径，图片名，图片宽高
+                                                    images_folder=reading_dir, man_trans=man_trans)  # 存储所有图片的 相机模型id，旋转矩阵 平移向量，视角场，图片数据，图片路径，图片名，图片宽高
     cam_infos = sorted(cam_infos_unsorted.copy(), key=lambda x: x.image_name)  # 根据图片名称对 list进行排序
 
     if eval:
@@ -457,8 +456,7 @@ def partition(path, images, man_trans, eval, llffhold=83):
     bin_path = os.path.join(path, "sparse/0/points3D.bin")
     txt_path = os.path.join(path, "sparse/0/points3D.txt")
     if not os.path.exists(ply_path):
-        print(
-            "Converting point3d.bin to .ply, will happen only the first time you open the scene.")  # 将point3d.bin转换为.ply，只会在您第一次打开场景时发生。
+        print("Converting point3d.bin to .ply, will happen only the first time you open the scene.")  # 将point3d.bin转换为.ply，只会在您第一次打开场景时发生。
         try:
             xyz, rgb, _ = read_points3D_binary(bin_path)
         except:

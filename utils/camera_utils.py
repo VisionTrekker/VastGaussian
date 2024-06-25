@@ -128,6 +128,13 @@ def camera_to_JSON(id, camera: Camera):
 
 
 def loadCamPartition(args, id, cam_info, image_width, image_height):
+    """
+        id: 某个训练相机的id
+        cam_info: 包含某个相机参数
+        image_width:
+        image_height:
+        Returns:
+    """
     # image_width //= args.resolution
     # image_height //= args.resolution
     # orig_w = image_width
@@ -156,6 +163,7 @@ def loadCamPartition(args, id, cam_info, image_width, image_height):
     # image_width = resolution[0]
     # image_height = resolution[1]
 
+    # 得到一个相机类
     return SimpleCamera(
         colmap_id=cam_info.uid, R=cam_info.R, T=cam_info.T,
         FoVx=cam_info.FovX, FoVy=cam_info.FovY, image_name=cam_info.image_name,
@@ -163,11 +171,15 @@ def loadCamPartition(args, id, cam_info, image_width, image_height):
 
 
 def cameraList_from_camInfos_partition(cam_infos, args):
+    """
+        cam_infos: 所有训练与测试相机信息
+    """
     camera_list = []
-
+    # 遍历每个相机信息
     for id, c in enumerate(cam_infos):
         image_width = c.width
         image_height = c.height
+        # 实例化每个相机，添加到列表中
         camera_list.append(loadCamPartition(args, id, c,
                                             image_width,
                                             image_height,

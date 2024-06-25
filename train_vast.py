@@ -310,24 +310,24 @@ if __name__ == "__main__":
     network_gui.init(args.ip, args.port)
     torch.autograd.set_detect_anomaly(args.detect_anomaly)
 
-    # Manhattan Alignment
+    # Manhattan Alignment，获取曼哈顿对齐变换矩阵
     lp.man_trans = get_man_trans(lp)
 
     # train multi gpu
     mp.set_start_method('spawn', force=True)
     tb_writer = prepare_output_and_logger(lp)
 
-    # data partition
+    # data partition，大场景分块
     partition_num, partition_id_list = data_partition(lp)
 
     cuda_devices = torch.cuda.device_count()
     print(f"Found {cuda_devices} CUDA devices")
-    training_round = partition_num // cuda_devices
-    remainder = partition_num % cuda_devices
+    training_round = partition_num // cuda_devices  # 每块GPU分配的client的个数
+    remainder = partition_num % cuda_devices        # 判断分块数是否可以被GPU均分，如果不可以均分则需要单独处理
 
     # Main Loops
-    for i in range(training_round):
-        partition_pool = [i + training_round * j for j in range(cuda_devices)]
+    for i in range(training_round): # 假设9个块，2张卡，则training_round=4, remainder=1, 则i: 0, 1, 2, 3
+        partition_pool = [i + training_round * j for j in range(cuda_devices)]  # [0, 4] / [1, 5] / [2, 6] / [3, 7]
 
         processes = []
         for index, device_id in enumerate(range(cuda_devices)):
