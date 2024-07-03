@@ -227,7 +227,7 @@ def prepare_output_and_logger(args):
         var_dict = copy.deepcopy(vars(args))
         del_var_list = ["manhattan", "man_trans", "pos", "rot",
                         "m_region", "n_region", "extend_rate", "visible_rate",
-                        "num_gpus", "partition_id", "partition_model_path", "plantform",
+                        "num_gpus", "partition_id", "partition_model_path", "platform",
                         "llffhold"]  # 删除多余的变量，防止无法使用SIBR可视化
         for key in vars(args).keys():
             if key in del_var_list:

@@ -61,7 +61,7 @@ class ModelParams(ParamGroup):
         self.exp_name = ""
         # Manhattan
         self.manhattan = False  # 是否需要曼哈顿对齐
-        self.plantform = "cc"  # cloudcompare: cc, threejs: tj  # 使用哪种平台进行曼哈顿对齐
+        self.platform = "cc"  # cloudcompare: cc, threejs: tj  # 使用哪种平台进行曼哈顿对齐
         self.pos = ""  # 点云平移，平移向量，如果使用threejs，则pos和rot的参数个数均为三个，如果使用cloudcompare则，rot为9个数，pos为3个数
         self.rot = ""  # 点云平移，如果处理平台为cloudcompare，则rot为旋转矩阵，否则用threejs处理rot就为三个旋转向量
         self.man_trans = None  # 指定经过曼哈顿对齐后的点云坐标相对于初始点云坐标的变换矩阵

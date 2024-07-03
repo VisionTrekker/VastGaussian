@@ -31,7 +31,7 @@ nohup python train_vast.py -s ../datasets/Mill19/rubble \
 #nohup python train_vast.py -s ../datasets/Mill19/rubble \
 #--exp_name rubble_tj \
 #--manhattan \
-#--plantform "tj" \
+#--platform "tj" \
 #--eval \
 #--llffhold 83 \
 #--resolution 4 \
