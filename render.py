@@ -32,6 +32,8 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     makedirs(gts_path, exist_ok=True)
 
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
+        if args.sample_freq != -1 and idx % args.sample_freq != 0:
+            continue
         rendering = render(view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
@@ -61,6 +63,7 @@ if __name__ == "__main__":
     parser.add_argument("--load_iteration", default=-1, type=int)
     parser.add_argument("--skip_train", default=True, action="store_true")
     parser.add_argument("--skip_test", action="store_true")
+    parser.add_argument("--sample_freq", default=-1, type=int)
     parser.add_argument("--quiet", action="store_true")
     # args = get_combined_args(parser)
     args = parser.parse_args(sys.argv[1:])
