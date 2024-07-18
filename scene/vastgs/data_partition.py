@@ -68,6 +68,8 @@ class ProgressiveDataPartitioning:
         if not os.path.exists(self.partition_extend_dir): os.makedirs(self.partition_extend_dir)  # 创建存放分块后 拓展后 点云的文件夹
         if not os.path.exists(self.partition_visible_dir): os.makedirs(self.partition_visible_dir)  # 创建存放分块后 可见性相机选择后 点云的文件夹
         self.fig, self.ax = self.draw_pcd(self.pcd, train_cameras)  # 正交投影绘制点云、所有训练和测试相机中心 在x、z轴上的坐标，即投影到平面的点
+
+        # train相机分块
         self.run_DataPartition(train_cameras)
 
     def draw_pcd(self, pcd, train_cameras):
