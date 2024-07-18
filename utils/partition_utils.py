@@ -14,7 +14,7 @@ def data_partition(lp):
     from scene.dataset_readers import sceneLoadTypeCallbacks
     from scene.vastgs.data_partition import ProgressiveDataPartitioning
 
-    # 读取整个场景的点云以及相机，同时去除了一些离群点 且 将相机划分为train和test
+    # 读取整个场景的点云以及相机，同时去除了一些离群点 且 将相机划分为train和test（未加载图片）
     scene_info = sceneLoadTypeCallbacks["Partition"](lp.source_path, lp.images, lp.man_trans, lp.eval, lp.llffhold)
     # 将训练和测试相机的图片名分别保存到txt文件中
     with open(os.path.join(lp.model_path, "train_cameras.txt"), "w") as f:
@@ -25,10 +25,13 @@ def data_partition(lp):
         for cam in scene_info.test_cameras:
             image_name = cam.image_name
             f.write(f"{image_name}\n")
-    # 实例化所有训练和测试相机
+
+    # 实例化所有train和test相机（未加载图片）
     all_cameras = cameraList_from_camInfos_partition(scene_info.train_cameras + scene_info.test_cameras, args=lp)
+    # 创建分块对象（包括初始化一些相关文件夹；点云投影；train相机、点云分块）
     DataPartitioning = ProgressiveDataPartitioning(scene_info, all_cameras, lp.model_path,
                                                    lp.m_region, lp.n_region, lp.extend_rate, lp.visible_rate)
+    # 获取相机、点云分块后的数据
     partition_result = DataPartitioning.partition_scene
 
     # 保存每个partition的图片名称到txt文件

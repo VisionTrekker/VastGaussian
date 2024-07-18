@@ -40,6 +40,17 @@ except ImportError:
 
 
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, logger=None):
+    """
+        dataset: 当前块的 高斯体模型
+        opt:
+        pipe:
+        testing_iterations:
+        saving_iterations:
+        checkpoint_iterations:
+        checkpoint:
+        debug_from:
+        logger:
+    """
     # read train and test camera list
     test_camList = read_camList(dataset.model_path + "/test_cameras.txt")
 
@@ -47,7 +58,10 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     tb_writer = prepare_output_and_logger(dataset)
     gaussians = GaussianModel(dataset.sh_degree)
     # scene = Scene(dataset, gaussians)
+
+    # 创建当前分块的 Scene
     scene = PartitionScene(dataset, gaussians)
+
     gaussians.training_setup(opt)
     if checkpoint:
         (model_params, first_iter) = torch.load(checkpoint)
@@ -165,6 +179,18 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
 def parallel_local_training(gpu_id, partition_id, lp_args, op_args, pp_args, test_iterations, save_iterations, checkpoint_iterations,
                             start_checkpoint, debug_from):
+    """
+        gpu_id:
+        partition_id: 某一分块数据id（train相机、点云）
+        lp_args: 高斯体模型
+        op_args:
+        pp_args:
+        test_iterations:
+        save_iterations:
+        checkpoint_iterations:
+        start_checkpoint:
+        debug_from:
+    """
     torch.cuda.set_device(gpu_id)
 
     partition_model_path = f"{lp_args.model_path}/partition_point_cloud/visible"
@@ -174,7 +200,9 @@ def parallel_local_training(gpu_id, partition_id, lp_args, op_args, pp_args, tes
     logger = setup_logging(partition_id, file_path=partition_model_path)
     # 启动训练
     logger.info("Starting process")
+
     training(lp_args, op_args, pp_args, test_iterations, save_iterations, checkpoint_iterations,start_checkpoint, debug_from, logger=logger)
+
     logger.info("Finishing process")
 
 
@@ -317,7 +345,7 @@ if __name__ == "__main__":
     mp.set_start_method('spawn', force=True)
     tb_writer = prepare_output_and_logger(lp)
 
-    # data partition，大场景分块
+    # data partition，大场景分块（获取整个场景的相机(划分为train和test(未加载图片))、点云；train相机和点云分块）
     partition_num, partition_id_list = data_partition(lp)
 
     cuda_devices = torch.cuda.device_count()
@@ -326,13 +354,16 @@ if __name__ == "__main__":
     remainder = partition_num % cuda_devices        # 判断分块数是否可以被GPU均分，如果不可以均分则需要单独处理
 
     # Main Loops
-    for i in range(training_round): # 假设9个块，2张卡，则training_round=4, remainder=1, 则i: 0, 1, 2, 3
-        partition_pool = [i + training_round * j for j in range(cuda_devices)]  # [0, 4] / [1, 5] / [2, 6] / [3, 7]
+    # 假设9个块，4张卡，则training_round=2，remainder=1，即需4GPU先跑两轮，最后再跑最后一个分块的
+    for i in range(training_round):
+        # 第 i 轮
+        partition_pool = [i + training_round * j for j in range(cuda_devices)]  # [0, 2, 4, 6] / [1, 3, 5, 7]
 
         processes = []
+        # 在当前轮的每个GPU上创建 parallel_local_training 进程 (会调用 traing 函数)
         for index, device_id in enumerate(range(cuda_devices)):
             partition_index = partition_pool[index]
-            partition_id = partition_id_list[partition_index]
+            partition_id = partition_id_list[partition_index]   # 某一分块数据id（train相机、点云）
             print("train partition {} on gpu {}".format(partition_id, device_id))
             p = mp.Process(target=parallel_local_training, name=f"Partition_{partition_id}",
                         args=(device_id, partition_id, lp, op, pp,
@@ -340,7 +371,7 @@ if __name__ == "__main__":
                               args.start_checkpoint, args.debug_from))
             processes.append(p)
             p.start()
-
+        # 实际运行
         for p in processes:
             p.join()  # 等待所有进程完成
             # processes = []

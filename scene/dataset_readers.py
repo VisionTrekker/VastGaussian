@@ -190,6 +190,8 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder, man_trans):
 
         image_path = os.path.join(images_folder, os.path.basename(extr.name))  # 获取该图片路径
         image_name = os.path.basename(image_path).split(".")[0]  # 获取该图片名称
+        if not os.path.exists(image_path):
+            continue
         image = Image.open(image_path)
 
         cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
@@ -201,6 +203,7 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder, man_trans):
 
 def readColmapCamerasEval(cam_extrinsics, cam_intrinsics, images_folder, man_trans, model_path):
     test_camList = read_camList(os.path.join(model_path, "test_cameras.txt"))
+    print("reading {} test cameras from {}".format(len(test_camList), os.path.join(model_path, "test_cameras.txt")))
     cam_infos = []
     for idx, key in enumerate(cam_extrinsics):
         sys.stdout.write('\r')
@@ -318,7 +321,7 @@ def readColmapSceneInfo(path, images, eval, llffhold=83):
         cam_intrinsics = read_intrinsics_text(cameras_intrinsic_file)
 
     reading_dir = "images" if images == None else images
-    # 存储所有图片的 相机模型id，旋转矩阵 平移向量，视角场，图片数据，图片路径，图片名，图片宽高
+    # 所有相机info：存储所有图片的 相机模型id，旋转矩阵 平移向量，视角场，图片数据，图片路径，图片名，图片宽高
     cam_infos_unsorted = readColmapCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics, images_folder=os.path.join(path, reading_dir))
     cam_infos = sorted(cam_infos_unsorted.copy(), key=lambda x: x.image_name)
 
@@ -355,8 +358,7 @@ def readColmapSceneInfo(path, images, eval, llffhold=83):
 
 
 def readColmapSceneInfoVast(path, model_path, partition_id, images, eval, man_trans, llffhold=83):
-    # 读取每个partition的点云，以及对应的相机
-    # 读取所有图像的信息，包括相机内外参数，以及3D点云坐标
+    # 读取当前partition相机的内外参、图像数据、3D点云
     client_camera_txt_path = os.path.join(model_path, f"{partition_id}_camera.txt")
     with open(client_camera_txt_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
@@ -367,7 +369,10 @@ def readColmapSceneInfoVast(path, model_path, partition_id, images, eval, man_tr
     cam_extrinsics = read_extrinsics_binary_vast(cameras_extrinsic_file, lines)
     cam_intrinsics = read_intrinsics_binary_vast(cameras_intrinsic_file, lines)
 
-    images_dir = os.path.join(path, "images")
+    # 加载图片
+    images_folder = "images" if images == None else images
+    images_dir = os.path.join(path, images_folder)
+    print("\t {} images_dir: {}".format(partition_id, images_dir))
     cam_infos_unsorted = readColmapCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics,
                                            images_folder=images_dir,
                                            man_trans=man_trans)  # 存储所有图片的 相机模型id，旋转矩阵 平移向量，视角场，图片数据，图片路径，图片名，图片宽高
@@ -405,12 +410,15 @@ def readColmapSceneInfoEval(path, images, man_trans, model_path):
         cam_extrinsics = read_extrinsics_text(cameras_extrinsic_file)
         cam_intrinsics = read_intrinsics_text(cameras_intrinsic_file)
 
-    images_dir = os.path.join(path, "images")
+    images_folder = "images" if images == None else images
+    images_dir = os.path.join(path, images_folder)
+    print("\t images_dir: {}".format(images_dir))
     cam_infos_unsorted = readColmapCamerasEval(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics, images_folder=images_dir, man_trans=man_trans, model_path=model_path)
     cam_infos = sorted(cam_infos_unsorted.copy(), key = lambda x : x.image_name)
 
     train_cam_infos = []
     test_cam_infos = cam_infos
+    print("\t test_cam_infos lens: {}".format(len(test_cam_infos)))
 
     nerf_normalization = getNerfppNorm(test_cam_infos)
 

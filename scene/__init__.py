@@ -115,7 +115,7 @@ class PartitionScene:
 
         self.train_cameras = {}
         self.test_cameras = {}
-
+        # 加载图片
         scene_info = sceneLoadTypeCallbacks["ColmapVast"](args.source_path, args.partition_model_path,
                                                           args.partition_id, args.images, eval=False,
                                                           man_trans=args.man_trans)  # 分块的时候已经划分过train 和 test，此时不用再划分
@@ -150,6 +150,7 @@ class PartitionScene:
 
         for resolution_scale in resolution_scales:
             print("Loading Training Cameras")
+            # 更改分辨率
             self.train_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.train_cameras, resolution_scale, args)
             print("Loading Test Cameras")
             self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args)
