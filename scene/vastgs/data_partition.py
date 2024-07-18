@@ -113,11 +113,12 @@ class ProgressiveDataPartitioning:
             # (2) 基于点云位置的相机选择
             partition_dict, refined_ori_bbox = self.refine_ori_bbox(partition_dict)
             # partition_dict, refined_ori_bbox = self.refine_ori_bbox_average(partition_dict)
-            partition_list = self.Position_based_data_selection(partition_dict, refined_ori_bbox)
-            self.draw_partition(partition_list)
             # (3)
-            self.partition_scene = self.Visibility_based_camera_selection(partition_list)  # 输出经过可见性筛选后的场景 包括相机和点云
-
+            partition_list = self.Position_based_data_selection(partition_dict, refined_ori_bbox)
+            # 以图片显示划分的块
+            self.draw_partition(partition_list)
+            # 输出经可见性筛选后的 Scene（包括相机、点云）
+            self.partition_scene = self.Visibility_based_camera_selection(partition_list)
             self.save_partition_data()  # 保存
         else:
             # 存在partition后的数据，则加载
