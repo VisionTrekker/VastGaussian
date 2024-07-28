@@ -33,9 +33,6 @@ This is `VastGaussian: Vast 3D Gaussians for Large Scene Reconstruction` unoffic
 
 - [x] ~~update color correct and LPIPS (using alex net) while evaluation~~
 
-- [ ] Experiments are carried out on UrbanScene3D and Mill-19 datasets
-
-- [ ] Fix bugs, and bugs, and bugs ...
 
 ## Some notes
 
