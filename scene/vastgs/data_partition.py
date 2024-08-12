@@ -430,9 +430,17 @@ class ProgressiveDataPartitioning:
         fx = camera.image_width / (2 * math.tan(camera.FoVx / 2))
         fy = camera.image_height / (2 * math.tan(camera.FoVy / 2))
 
+        # 这样写可能是不正确的，但在实验过程中没有发现明显的错误，不过还是进行修正
+        #intrinsic_matrix = np.array([
+        #    [fx, 0, camera.image_height // 2],
+        #    [0, fy, camera.image_width // 2],
+        #    [0, 0, 1]
+        #])
+
+        # fix bug 
         intrinsic_matrix = np.array([
-            [fx, 0, camera.image_height // 2],
-            [0, fy, camera.image_width // 2],
+            [fx, 0, camera.image_width // 2],
+            [0, fy, camera.image_height // 2],
             [0, 0, 1]
         ])
 
