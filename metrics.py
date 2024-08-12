@@ -82,7 +82,7 @@ def evaluate(model_paths):
                     render = torch.tensor(render).permute(2, 0, 1).unsqueeze(0).contiguous().cuda()
                     cc_renders.append(render)
                     torchvision.utils.save_image(render, os.path.join(scene_dir, "test/ours_60000/renders_cc", "{}".format(image_name)))
-                renders = cc_renders
+                renders = cc_renders  # 更新为颜色修正后的图片
 
                 ssims = []
                 psnrs = []

@@ -192,7 +192,6 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder, man_trans):
 
         image_path = os.path.join(images_folder, os.path.basename(extr.name))  # 获取该图片路径
         image_name = os.path.basename(image_path).split(".")[0]  # 获取该图片名称
-
         if not os.path.exists(image_path):
             continue
         image = Image.open(image_path)

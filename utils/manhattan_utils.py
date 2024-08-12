@@ -23,7 +23,7 @@ def create_man_rans(position, rotation):
                       [math.sin(np.deg2rad(-rotation[2])),  math.cos(np.deg2rad(-rotation[2])), 0],
                       [0, 0, 1]])
 
-    rot = rot_z @ rot_y @ rot_x # 最终的旋转矩阵
+    rot = rot_z @ rot_y @ rot_x     # 最终的旋转矩阵
     man_trans = np.zeros((4, 4))
     man_trans[:3, :3] = rot.transpose()
     man_trans[:3, -1] = np.array(position).transpose()

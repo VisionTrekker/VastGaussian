@@ -68,6 +68,8 @@ class ProgressiveDataPartitioning:
         if not os.path.exists(self.partition_extend_dir): os.makedirs(self.partition_extend_dir)  # 创建存放分块后 拓展后 点云的文件夹
         if not os.path.exists(self.partition_visible_dir): os.makedirs(self.partition_visible_dir)  # 创建存放分块后 可见性相机选择后 点云的文件夹
         self.fig, self.ax = self.draw_pcd(self.pcd, train_cameras)  # 正交投影绘制点云、所有训练和测试相机中心 在x、z轴上的坐标，即投影到平面的点
+
+        # train相机分块
         self.run_DataPartition(train_cameras)
 
     def draw_pcd(self, pcd, train_cameras):
@@ -111,11 +113,12 @@ class ProgressiveDataPartitioning:
             # (2) 基于点云位置的相机选择
             partition_dict, refined_ori_bbox = self.refine_ori_bbox(partition_dict)
             # partition_dict, refined_ori_bbox = self.refine_ori_bbox_average(partition_dict)
-            partition_list = self.Position_based_data_selection(partition_dict, refined_ori_bbox)
-            self.draw_partition(partition_list)
             # (3)
-            self.partition_scene = self.Visibility_based_camera_selection(partition_list)  # 输出经过可见性筛选后的场景 包括相机和点云
-
+            partition_list = self.Position_based_data_selection(partition_dict, refined_ori_bbox)
+            # 以图片显示划分的块
+            self.draw_partition(partition_list)
+            # 输出经可见性筛选后的 Scene（包括相机、点云）
+            self.partition_scene = self.Visibility_based_camera_selection(partition_list)
             self.save_partition_data()  # 保存
         else:
             # 存在partition后的数据，则加载
@@ -427,9 +430,17 @@ class ProgressiveDataPartitioning:
         fx = camera.image_width / (2 * math.tan(camera.FoVx / 2))
         fy = camera.image_height / (2 * math.tan(camera.FoVy / 2))
 
+        # 这样写可能是不正确的，但在实验过程中没有发现明显的错误，不过还是进行修正
+        #intrinsic_matrix = np.array([
+        #    [fx, 0, camera.image_height // 2],
+        #    [0, fy, camera.image_width // 2],
+        #    [0, 0, 1]
+        #])
+
+        # fix bug 
         intrinsic_matrix = np.array([
-            [fx, 0, camera.image_height // 2],
-            [0, fy, camera.image_width // 2],
+            [fx, 0, camera.image_width // 2],
+            [0, fy, camera.image_height // 2],
             [0, 0, 1]
         ])
 
