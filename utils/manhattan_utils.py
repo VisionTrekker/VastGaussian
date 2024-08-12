@@ -12,6 +12,7 @@ import numpy as np
 def create_man_rans(position, rotation):
     # create manhattan transformation matrix for threejs
     # The angle is reversed because the counterclockwise direction is defined as negative in three.js
+    # 根据传入的旋转角度，分别计算分别绕 x、y 和 z 轴旋转的旋转矩阵（由于 three.js 中逆时针旋转方向定义为负，因此这里的旋转角度取反）
     rot_x = np.array([[1, 0, 0],
                       [0, math.cos(np.deg2rad(-rotation[0])), -math.sin(np.deg2rad(-rotation[0]))],
                       [0, math.sin(np.deg2rad(-rotation[0])),  math.cos(np.deg2rad(-rotation[0]))]])
@@ -22,7 +23,7 @@ def create_man_rans(position, rotation):
                       [math.sin(np.deg2rad(-rotation[2])),  math.cos(np.deg2rad(-rotation[2])), 0],
                       [0, 0, 1]])
 
-    rot = rot_z @ rot_y @ rot_x
+    rot = rot_z @ rot_y @ rot_x # 最终的旋转矩阵
     man_trans = np.zeros((4, 4))
     man_trans[:3, :3] = rot.transpose()
     man_trans[:3, -1] = np.array(position).transpose()
