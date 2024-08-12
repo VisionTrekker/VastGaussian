@@ -11,12 +11,14 @@
 
 import os
 import sys
+import glob
 from PIL import Image
 from typing import NamedTuple
 from scene.colmap_loader import read_extrinsics_text, read_intrinsics_text, qvec2rotmat, \
     read_extrinsics_binary, read_intrinsics_binary, read_points3D_binary, read_points3D_text, \
     read_extrinsics_binary_vast, read_intrinsics_binary_vast
 from utils.graphics_utils import getWorld2View2, focal2fov, fov2focal
+from tqdm import tqdm
 import numpy as np
 import json
 from pathlib import Path
@@ -483,6 +485,131 @@ def partition(path, images, man_trans, eval, llffhold=83):
     return scene_info
 
 
+# def readCamerasFromTransformsCity(path, transformsfile, random_background, white_background, extension=".png",
+#                                   undistorted=False, is_debug=False):
+#     cam_infos = []
+#     if undistorted:
+#         print("Undistortion the images!!!")
+#         # TODO: Support undistortion here. Please refer to octree-gs implementation.
+#     with open(os.path.join(path, transformsfile)) as json_file:
+#         contents = json.load(json_file)
+#         try:
+#             fovx = contents["camera_angle_x"]
+#         except:
+#             fovx = None
+#
+#         frames = contents["frames"]
+#         # check if filename already contain postfix
+#         if frames[0]["file_path"].split('.')[-1] in ['jpg', 'jpeg', 'JPG', 'png']:
+#             extension = ""
+#
+#         c2ws = np.array([frame["transform_matrix"] for frame in frames])
+#
+#         Ts = c2ws[:, :3, 3]
+#
+#         ct = 0
+#
+#         progress_bar = tqdm(frames, desc="Loading dataset")
+#
+#         for idx, frame in enumerate(frames):
+#             cam_name = os.path.join(path, frame["file_path"] + extension)
+#             # cam_name = frame["file_path"]
+#             if not os.path.exists(cam_name):
+#                 print(f"File {cam_name} not found, skipping...")
+#                 continue
+#             # NeRF 'transform_matrix' is a camera-to-world transform
+#             c2w = np.array(frame["transform_matrix"])
+#
+#             if idx % 10 == 0:
+#                 progress_bar.set_postfix({"num": f"{ct}/{len(frames)}"})
+#                 progress_bar.update(10)
+#             if idx == len(frames) - 1:
+#                 progress_bar.close()
+#
+#             ct += 1
+#             # change from OpenGL/Blender camera axes (Y up, Z back) to COLMAP (Y down, Z forward)
+#             c2w[:3, 1:3] *= -1
+#
+#             # get the world-to-camera transform and set R, T
+#             w2c = np.linalg.inv(c2w)
+#
+#             R = np.transpose(w2c[:3, :3])  # R is stored transposed due to 'glm' in CUDA code
+#             T = w2c[:3, 3]
+#
+#             image_path = os.path.join(path, cam_name)
+#             image_name = cam_name[-17:]  # Path(cam_name).stem
+#             image = Image.open(image_path)
+#
+#             if fovx is not None:
+#                 fovy = focal2fov(fov2focal(fovx, image.size[0]), image.size[1])
+#                 FovY = fovy
+#                 FovX = fovx
+#             else:
+#                 # given focal in pixel unit
+#                 FovY = focal2fov(frame["fl_y"], image.size[1])
+#                 FovX = focal2fov(frame["fl_x"], image.size[0])
+#
+#             cam_infos.append(CameraInfo(uid=idx, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
+#                                         image_path=image_path, image_name=image_name, width=image.size[0],
+#                                         height=image.size[1]))
+#
+#             if is_debug and idx > 50:
+#                 break
+#     return cam_infos
+#
+# def city_partition(path, images, man_trans, eval, random_background, white_background, extension=".tif", llffhold=83, undistorted=False):
+#     # 读取整个场景的点云和相机参数，用于分块
+#     train_json_path = os.path.join(path, f"transforms_train.json")
+#     test_json_path = os.path.join(path, f"transforms_test.json")
+#     print("Reading Training Transforms from {} {}".format(train_json_path, test_json_path))
+#
+#     train_cam_infos = readCamerasFromTransformsCity(path, train_json_path, random_background, white_background, extension, undistorted)
+#     test_cam_infos = readCamerasFromTransformsCity(path, test_json_path, random_background, white_background, extension, undistorted)
+#     print("Load Cameras(train, test): ", len(train_cam_infos), len(test_cam_infos))
+#     cam_infos = sorted(cam_infos_unsorted.copy(), key=lambda x: x.image_name)  # 根据图片名称对 list进行排序
+#
+#     if eval:
+#         train_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold != 0]
+#         test_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold == 0]
+#     else:
+#         train_cam_infos = cam_infos
+#         test_cam_infos = []
+#
+#     nerf_normalization = getNerfppNorm(train_cam_infos)  # 使用找到在世界坐标系下相机的几何中心
+#     # 将3D点云数据写入 scene_info中
+#     ply_path = os.path.join(path, "sparse/0/points3D.ply")
+#     bin_path = os.path.join(path, "sparse/0/points3D.bin")
+#     txt_path = os.path.join(path, "sparse/0/points3D.txt")
+#     if not os.path.exists(ply_path):
+#         print(
+#             "Converting point3d.bin to .ply, will happen only the first time you open the scene.")  # 将point3d.bin转换为.ply，只会在您第一次打开场景时发生。
+#         try:
+#             xyz, rgb, _ = read_points3D_binary(bin_path)
+#         except:
+#             xyz, rgb, _ = read_points3D_text(txt_path)
+#         storePly(ply_path, xyz, rgb)
+#     pcd = fetchPly(ply_path, man_trans=man_trans)  # 得到稀疏点云中，各个3D点的属性信息
+#
+#     # 删除点云中的离群点
+#     dist_threshold = 99
+#     points, colors, normals = pcd.points, pcd.colors, pcd.normals  # 获取初始点云的 3D坐标，颜色，法线
+#     points_threshold = np.percentile(points[:, 1],
+#                                      dist_threshold)  # use dist_ratio to exclude outliers。计算点云沿Y轴的第99%的值，以此值为阈值去除离群点
+#
+#     colors = colors[points[:, 1] < points_threshold]
+#     normals = normals[points[:, 1] < points_threshold]
+#     points = points[points[:, 1] < points_threshold]
+#     pcd = BasicPointCloud(points=points, colors=colors, normals=normals)
+#
+#     # print(pcd)
+#     scene_info = SceneInfo(point_cloud=pcd,
+#                            train_cameras=train_cam_infos,
+#                            test_cameras=test_cam_infos,
+#                            nerf_normalization=nerf_normalization,
+#                            ply_path=ply_path)  # 保存一个场景的所有参数信息
+#     return scene_info
+
+
 def readCamerasFromTransforms(path, transformsfile, white_background, extension=".png"):
     cam_infos = []
 
@@ -567,5 +694,6 @@ sceneLoadTypeCallbacks = {
     "Blender": readNerfSyntheticInfo,
     "ColmapVast": readColmapSceneInfoVast,
     "ColmapEval": readColmapSceneInfoEval,
-    "Partition": partition
+    "Partition": partition,
+    # "CityPartition": city_partition,
 }
