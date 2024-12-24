@@ -146,6 +146,7 @@ def read_extrinsics_binary_vast(path_to_model_file, lines):
             x_y_id_s = read_next_bytes(fid, num_bytes=24 * num_points2D, format_char_sequence="ddq" * num_points2D)
 
             if image_name not in lines:
+                # print("\t[read_extrinsics_binary_vast] image_ name :", image_name)
                 continue  # Continue to the next image after reading all data for the current image
 
             qvec = np.array(binary_image_properties[1:5])

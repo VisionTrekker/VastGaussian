@@ -141,7 +141,10 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             # Progress bar
             ema_loss_for_log = 0.4 * loss.item() + 0.6 * ema_loss_for_log
             if iteration % 10 == 0:
-                progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{7}f}"})
+                progress_bar.set_postfix({
+                    "Loss": f"{ema_loss_for_log:.{7}f}",
+                    "Points": f"{gaussians.get_xyz.shape[0]}",
+                })
                 progress_bar.update(10)
             if iteration == opt.iterations:
                 progress_bar.close()
@@ -227,13 +230,6 @@ def setup_logging(partition_id, file_path):
 
 
 def prepare_output_and_logger(args):
-    # if not args.model_path:
-    #     if os.getenv('OAR_JOB_ID'):
-    #         unique_str=os.getenv('OAR_JOB_ID')
-    #     else:
-    #         unique_str = str(uuid.uuid4())
-    #     args.model_path = os.path.join("./output/", unique_str[0:10])
-
     if not args.model_path:
         model_path = os.path.join("./output/", args.exp_name)
         # 如果这个文件存在，就在这个文件名的基础上创建新的文件夹，文件名后面跟上1,2,3
@@ -280,7 +276,7 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
     if iteration in testing_iterations:
         torch.cuda.empty_cache()
         validation_configs = ({'name': 'test', 'cameras' : scene.getTestCameras()},
-                              {'name': 'train', 'cameras' : [scene.getTrainCameras()[idx % len(scene.getTrainCameras())] for idx in range(5, 30, 5)]})
+                              {'name': 'train', 'cameras' : [scene.getTrainCameras()[idx % len(scene.getTrainCameras())] for idx in range(0, 120, 4)]})
 
         for config in validation_configs:
             if config['cameras'] and len(config['cameras']) > 0:
@@ -321,8 +317,8 @@ if __name__ == "__main__":
     parser.add_argument('--port', type=int, default=6009)
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
-    parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 30_000, 60_000])
-    parser.add_argument("--save_iterations", nargs="+", type=int, default=[7_000, 30_000, 60_000])
+    parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 30_000])
+    parser.add_argument("--save_iterations", nargs="+", type=int, default=[30_000])
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
     parser.add_argument("--start_checkpoint", type=str, default=None)
@@ -338,7 +334,7 @@ if __name__ == "__main__":
     network_gui.init(args.ip, args.port)
     torch.autograd.set_detect_anomaly(args.detect_anomaly)
 
-    # Manhattan Alignment，获取曼哈顿对齐变换矩阵
+    # 1. Manhattan Alignment，获取曼哈顿对齐变换矩阵（T_初始_曼哈顿对齐后）
     lp.man_trans = get_man_trans(lp)
 
     # train multi gpu

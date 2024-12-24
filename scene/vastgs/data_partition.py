@@ -54,11 +54,15 @@ class ProgressiveDataPartitioning:
         self.pcd = scene_info.point_cloud
         # print(f"self.pcd={self.pcd}")
         self.model_path = model_path  # 存放模型位置
+
         self.partition_dir = os.path.join(model_path, "partition_point_cloud")
+
         self.partition_ori_dir = os.path.join(self.partition_dir, "ori")
         self.partition_extend_dir = os.path.join(self.partition_dir, "extend")
         self.partition_visible_dir = os.path.join(self.partition_dir, "visible")
+
         self.save_partition_data_dir = os.path.join(self.model_path, "partition_data.pkl")
+
         self.m_region = m_region
         self.n_region = n_region
         self.extend_rate = extend_rate
@@ -67,7 +71,7 @@ class ProgressiveDataPartitioning:
         if not os.path.exists(self.partition_ori_dir): os.makedirs(self.partition_ori_dir)  # 创建存放分块后 拓展前 点云的文件夹
         if not os.path.exists(self.partition_extend_dir): os.makedirs(self.partition_extend_dir)  # 创建存放分块后 拓展后 点云的文件夹
         if not os.path.exists(self.partition_visible_dir): os.makedirs(self.partition_visible_dir)  # 创建存放分块后 可见性相机选择后 点云的文件夹
-        self.fig, self.ax = self.draw_pcd(self.pcd, train_cameras)  # 正交投影绘制点云、所有训练和测试相机中心 在x、z轴上的坐标，即投影到平面的点
+        self.fig, self.ax = self.draw_pcd(self.pcd, train_cameras)  # 正交投影绘制点云、所有训练和测试相机 在x、z轴上的坐标，即投影到平面的点
 
         # train相机分块
         self.run_DataPartition(train_cameras)
@@ -83,7 +87,8 @@ class ProgressiveDataPartitioning:
         ax.set_ylabel('Z-axis')
         fig.tight_layout()  # 调整图表布局
         fig.savefig(os.path.join(self.model_path, 'pcd.png'),dpi=200)
-        # 获取所有训练和测试相机中心的x、z坐标
+
+        # 获取所有训练相机的x、z坐标
         x_coords = np.array([cam.camera_center[0].item() for cam in train_cameras])
         z_coords = np.array([cam.camera_center[2].item() for cam in train_cameras])
         ax.scatter(x_coords, z_coords, color='red', s=1)    # 绘制为红色的点
@@ -106,8 +111,7 @@ class ProgressiveDataPartitioning:
         return
         
     def run_DataPartition(self, train_cameras):
-        if not os.path.exists(self.save_partition_data_dir):
-            # 不存在partition后的数据，则进行分块
+        if not os.path.exists(self.save_partition_data_dir):    # 不存在partition后的数据，则进行分块
             # (1) 基于相机位置，将所有相机划分在 m*n 个区域内
             partition_dict = self.Camera_position_based_region_division(train_cameras)
             # (2) 基于点云位置的相机选择

@@ -19,20 +19,21 @@ import os
 WARNED = False
 
 def loadCam(args, id, cam_info, resolution_scale):
-    orig_w, orig_h = cam_info.image.size
+    image = Image.open(cam_info.image_path)
+    orig_w, orig_h = image.size
 
     if args.resolution in [1, 2, 4, 8]:
         resolution = round(orig_w / (resolution_scale * args.resolution)), round(
             orig_h / (resolution_scale * args.resolution))  # 计算下采样后，图片的尺寸
     else:  # should be a type that converts to float 应该是转换为float的类型吗
         if args.resolution == -1:  # 即使没有设置下采样的倍率，也会自动判断图片的宽度是否大于1600，如果大于，则自动进行下采样，并计算下采样的倍率
-            if orig_w > 1600:
+            if orig_w > 1920:
                 global WARNED
                 if not WARNED:
                     print("[ INFO ] Encountered quite large input images (>1.6K pixels width), rescaling to 1.6K.\n "
                         "If this is not desired, please explicitly specify '--resolution/-r' as 1")
                     WARNED = True
-                global_down = orig_w / 1600
+                global_down = orig_w / 1920
             else:
                 global_down = 1
         else:
@@ -41,7 +42,7 @@ def loadCam(args, id, cam_info, resolution_scale):
         scale = float(global_down) * float(resolution_scale)
         resolution = (int(orig_w / scale), int(orig_h / scale))
 
-    resized_image_rgb = PILtoTorch(cam_info.image, resolution)  # [C, H, W]
+    resized_image_rgb = PILtoTorch(image, resolution)  # [C, H, W]
 
     gt_image = resized_image_rgb[:3, ...]  # [C, H, W]
     loaded_mask = None

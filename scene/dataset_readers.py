@@ -72,6 +72,7 @@ def getNerfppNorm(cam_info):
         W2C = getWorld2View2(cam.R, cam.T)# 根据相机的旋转矩阵和平移向量，将 世界坐标系 -> 相机坐标系
         C2W = np.linalg.inv(W2C)        # 相机坐标系 -> 世界坐标系
         cam_centers.append(C2W[:3, 3:4])# 将变换矩阵中的平移向量作为相机的中心，在世界坐标系下相机的中心坐标
+    print("\t[cam_centers len: {}, shape: {} :", len(cam_centers), cam_centers[0].shape)
 
     center, diagonal = get_center_and_diag(cam_centers)
     radius = diagonal * 1.1 # 半径
@@ -193,8 +194,9 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder, man_trans):
         image_path = os.path.join(images_folder, os.path.basename(extr.name))  # 获取该图片路径
         image_name = os.path.basename(image_path).split(".")[0]  # 获取该图片名称
         if not os.path.exists(image_path):
+            print(f"\t[readColmapCameras] image_path: {image_path} not exists, skip it!")
             continue
-        image = Image.open(image_path)
+        image = None
 
         cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
                               image_path=image_path, image_name=image_name, width=width, height=height)
@@ -643,7 +645,7 @@ def readCamerasFromTransforms(path, transformsfile, white_background, extension=
 
             image_path = os.path.join(path, cam_name)
             image_name = Path(cam_name).stem
-            image = Image.open(image_path)
+            image = None
 
             im_data = np.array(image.convert("RGBA"))
 

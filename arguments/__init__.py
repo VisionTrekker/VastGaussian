@@ -93,7 +93,7 @@ class OptimizationParams(ParamGroup):
         self.position_lr_delay_mult = 0.01  # 位置学习率乘数(参见Plenoxels)，默认为0.01。
         self.position_lr_max_steps = 30_000  # 位置学习率从初始到最终的步数(从0开始)。默认为30_000。
         self.feature_lr = 0.0025  # 球面谐波具有学习率，默认为0.0025。
-        self.opacity_lr = 0.05    # 不透明学习率默认为0.05。
+        self.opacity_lr = 0.025    # 不透明学习率默认为0.05。
         self.scaling_lr = 0.005   # 缩放学习率默认为0.005。
         self.rotation_lr = 0.001  # 旋转学习率默认为0.001。
         self.percent_dense = 0.01  # 一个点必须超过场景范围的百分比(0-1)才能强制致密化，默认为0.01。通过百分比来限制多大的高斯应该被split，多小的高斯应该被clone
@@ -101,10 +101,10 @@ class OptimizationParams(ParamGroup):
         # VastGaussian Settings
         # The densification starts at the 1000th iteration and ends at the
         # 30, 000th iteration, with an interval of 200 iterations.
-        self.densification_interval = 200  # 密集化的频率，默认为100(每100次迭代)。
+        self.densification_interval = 100  # 密集化的频率，默认为100(每100次迭代)。
         self.opacity_reset_interval = 3000  # 重置不透明度的频率，默认为3_000。优化可能会遇到靠近输入摄像头的漂浮物,也就是致密化产生不必要的高斯点，因此将将不透明度设置为0
-        self.densify_from_iter = 1000  # 开始致密化的迭代，默认为500。
-        self.densify_until_iter = 30_000  # 迭代时停止致密化，默认为15_000。
+        self.densify_from_iter = 500  # 开始致密化的迭代，默认为500。
+        self.densify_until_iter = 15_000  # 迭代时停止致密化，默认为15_000。
         self.densify_grad_threshold = 0.0002  # 决定点是否应该基于2D位置梯度进行密度化的限制，默认值为0.0002。
         self.random_background = False
 
