@@ -197,6 +197,7 @@ def parallel_local_training(gpu_id, partition_id, lp_args, op_args, pp_args, tes
     torch.cuda.set_device(gpu_id)
 
     partition_model_path = f"{lp_args.model_path}/partition_point_cloud/visible"
+    # 更改每个partition的 输入路径为 /partition_point_cloud/visible
     lp_args.partition_id = partition_id
     lp_args.partition_model_path = partition_model_path
 
@@ -247,6 +248,7 @@ def prepare_output_and_logger(args):
     # Set up output folder
     print("Output folder: {}".format(args.model_path))
     os.makedirs(args.model_path, exist_ok=True)
+
     with open(os.path.join(args.model_path, "cfg_args"), 'w') as cfg_log_f:
         var_dict = copy.deepcopy(vars(args))
         del_var_list = ["manhattan", "man_trans", "pos", "rot",
@@ -337,11 +339,11 @@ if __name__ == "__main__":
     # 1. Manhattan Alignment，获取曼哈顿对齐变换矩阵（T_初始_曼哈顿对齐后）
     lp.man_trans = get_man_trans(lp)
 
-    # train multi gpu
+    # 2. train multi gpu，创建输出文件夹，保存参数到cfg_args，创建tensorboard writer
     mp.set_start_method('spawn', force=True)
     tb_writer = prepare_output_and_logger(lp)
 
-    # data partition，大场景分块（获取整个场景的相机(划分为train和test(未加载图片))、点云；train相机和点云分块）
+    # 3. data partition，大场景分块（获取整个场景的相机(划分为train和test(未加载图片))、点云；train相机和点云分块）
     partition_num, partition_id_list = data_partition(lp)
 
     cuda_devices = torch.cuda.device_count()

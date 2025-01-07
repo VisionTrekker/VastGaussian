@@ -363,14 +363,14 @@ def readColmapSceneInfo(path, images, eval, llffhold=83):
 
 def readColmapSceneInfoVast(path, model_path, partition_id, images, eval, man_trans, llffhold=83):
     # 读取当前partition相机的内外参、图像数据、3D点云
-    client_camera_txt_path = os.path.join(model_path, f"{partition_id}_camera.txt")
+    client_camera_txt_path = os.path.join(model_path, f"{partition_id}_camera.txt") # 当前partition的图像名
     with open(client_camera_txt_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
     lines = [line.strip() for line in lines]
 
     cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.bin")
     cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.bin")
-    cam_extrinsics = read_extrinsics_binary_vast(cameras_extrinsic_file, lines)
+    cam_extrinsics = read_extrinsics_binary_vast(cameras_extrinsic_file, lines) # 只读取当前partition相机的 内、外参
     cam_intrinsics = read_intrinsics_binary_vast(cameras_intrinsic_file, lines)
 
     # 加载图片
@@ -391,7 +391,7 @@ def readColmapSceneInfoVast(path, model_path, partition_id, images, eval, man_tr
 
     nerf_normalization = getNerfppNorm(train_cam_infos)  # 使用找到在世界坐标系下相机的几何中心
 
-    ply_path = os.path.join(model_path, f"{partition_id}_visible.ply")
+    ply_path = os.path.join(model_path, f"{partition_id}_visible.ply")  # 只读取当前partition相机的 点云
     pcd = fetchPly(ply_path, man_trans=None)  # 得到稀疏点云中，各个3D点的属性信息，点云已经经过曼哈顿对齐，第二次加载不需要再进行对齐，否则点云坐标会发生变换
     # print(pcd)
     scene_info = SceneInfo(point_cloud=pcd,

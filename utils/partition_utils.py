@@ -41,7 +41,7 @@ def data_partition(lp):
         partition_id_list.append(partition.partition_id)
         camera_info = partition.cameras
         image_name_list = [camera_info[i].camera.image_name + '.JPG' for i in range(len(camera_info))]
-        txt_file = f"{lp.model_path}/partition_point_cloud/visible/{partition.partition_id}_camera.txt"
+        txt_file = f"{lp.model_path}/partition_point_cloud/visible/{partition.partition_id}_camera.txt" # 用于在并行训练中分别在Scene中读取每个partition的相机内外参，图像数据
         # 打开一个文件用于写入，如果文件不存在则会被创建
         with open(txt_file, 'w') as file:
             # 遍历列表中的每个元素
