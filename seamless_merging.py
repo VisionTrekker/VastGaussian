@@ -184,7 +184,8 @@ def seamless_merge(model_path, partition_point_cloud_dir):
         print('x_min:{}, x_max:{}, z_min:{}, z_max:{}'.format(x_min, x_max, z_min, z_max))
 
         point_select_bbox = [x_min, x_max, -np.inf, np.inf, z_min, z_max]   # 3D bbox
-        mask = extract_point_cloud(xyz, point_select_bbox)  # 筛选处在camera_bbox内的高斯点云
+        # 筛选在bbox内的高斯点云
+        mask = extract_point_cloud(xyz, point_select_bbox)
         # 添加
         xyz_list.append(xyz[mask])
         features_dc_list.append(features_dc[mask])
@@ -193,13 +194,12 @@ def seamless_merge(model_path, partition_point_cloud_dir):
         scales_list.append(scales[mask])
         rots_list.append(rots[mask])
 
-
+        # 在XZ平面上绘制当前分块的 高斯点云中心
         fig, ax = plt.subplots()
         x_pos = xyz[mask][:, 0]
         z_pos = xyz[mask][:, 2]
         ax.scatter(x_pos, z_pos, c='k', s=1)
-        
-        rect = patches.Rectangle((x_min, z_min), x_max-x_min, z_max-z_min, linewidth=1, edgecolor='blue', facecolor='none')
+        rect = patches.Rectangle((x_min, z_min), x_max - x_min, z_max - z_min, linewidth=1, edgecolor='blue', facecolor='none')
         ax.add_patch(rect)
         ax.title.set_text('Plot of 2D Points')
         ax.set_xlabel('X-axis')
@@ -208,9 +208,10 @@ def seamless_merge(model_path, partition_point_cloud_dir):
         fig.savefig(os.path.join(partition_point_cloud_dir, f'{partition.partition_id}_pcd.png'), dpi=200)
         plt.close(fig)
         print('point_cloud_path:', point_cloud_path, "\n")
-
+        # 保存当前分块在 bbox 内的点云
         storePly(os.path.join(partition_point_cloud_dir, f"{partition.partition_id}_seamless.ply"), xyz[mask], np.zeros_like(xyz[mask]))
 
+    # 拼接多个分块的高斯点云
     points = np.concatenate(xyz_list, axis=0)
     features_dc_list = np.concatenate(features_dc_list, axis=0)
     features_extra_list = np.concatenate(features_extra_list, axis=0)
@@ -218,7 +219,7 @@ def seamless_merge(model_path, partition_point_cloud_dir):
     scales_list = np.concatenate(scales_list, axis=0)
     rots_list = np.concatenate(rots_list, axis=0)
 
-    # 因为使用拓展后的边界进行组合，因此可能会有一些重合的点，因此去重
+    # 因使用拓展后的camera_bbox进行拼接，因此存在重复的点，因此需去重
     points, mask = np.unique(points, axis=0, return_index=True)
     features_dc_list = features_dc_list[mask]
     features_extra_list = features_extra_list[mask]
@@ -226,6 +227,7 @@ def seamless_merge(model_path, partition_point_cloud_dir):
     scales_list = scales_list[mask]
     rots_list = rots_list[mask]
 
+    # 创建一个 SH阶数为3 的高斯模型
     global_model = GaussianModel(3)
     global_params = {'xyz': torch.from_numpy(points).float().cuda(),
                      'rotation': torch.from_numpy(rots_list).float().cuda(),
@@ -233,9 +235,9 @@ def seamless_merge(model_path, partition_point_cloud_dir):
                      'opacity': torch.from_numpy(opacities_list).float().cuda(),
                      'features_dc': torch.from_numpy(features_dc_list).float().cuda().permute(0, 2, 1),
                      'features_rest': torch.from_numpy(features_extra_list).float().cuda().permute(0, 2, 1)}
-
+    # 将参数数据传入到高斯模型中
     global_model.set_params(global_params)
-    global_model.save_ply(save_merge_dir)
+    global_model.save_ply(save_merge_dir)   # 保存
 
 
 if __name__ == '__main__':

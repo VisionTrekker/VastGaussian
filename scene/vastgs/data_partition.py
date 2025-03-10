@@ -527,7 +527,7 @@ class ProgressiveDataPartitioning:
 
                         # 筛选在j部分中的所有点中哪些可以投影在当前图像中
                         # Coverage-based point selection
-                        _, _, mask = self.point_in_image(camera, pcd_j.points)  # part_j的点云 投影子啊 part_j中当前相机内的mask
+                        _, _, mask = self.point_in_image(camera, pcd_j.points)  # part_j的点云 投影在 part_j中当前相机内的mask
                         updated_points, updated_colors, updated_normals = pcd_j.points[mask], pcd_j.colors[mask], pcd_j.normals[mask]
 
                         # 暂存要添加到 part_i 中的点云：part_j中可以被 要添加到part_i中的相机 看到的点云。因为有许多相机会观察到相同的点云，因此需要对点云进行去重

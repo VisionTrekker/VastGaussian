@@ -369,10 +369,9 @@ if __name__ == "__main__":
                               args.start_checkpoint, args.debug_from))
             processes.append(p)
             p.start()
-        # 实际运行
+
         for p in processes:
-            p.join()  # 等待所有进程完成
-            # processes = []
+            p.join()  # 阻塞主进程，等待所有子进程完成
 
         torch.cuda.empty_cache()
     # 如果还有partition未分配到GPU上，则单独处理
@@ -401,7 +400,7 @@ if __name__ == "__main__":
     # seamless_merging 无缝合并
     print("Merging Partitions...")
     all_point_cloud_dir = glob(os.path.join(lp.model_path, "point_cloud", "*"))
-
+    # 分别融合不同 iteration_xxx 下的point_cloud
     for point_cloud_dir in all_point_cloud_dir:
         seamless_merge(lp.model_path, point_cloud_dir)
 
