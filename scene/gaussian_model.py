@@ -234,13 +234,16 @@ class GaussianModel:
         optimizable_tensors = self.replace_tensor_to_optimizer(opacities_new, "opacity")
         self._opacity = optimizable_tensors["opacity"]
 
-    def load_ply(self, path):
+    def load_ply(self, path, spatial_lr_scale=None):
+        self.spatial_lr_scale = spatial_lr_scale
+        print(f'Loading Ply from {path}')
         plydata = PlyData.read(path)
 
         xyz = np.stack((np.asarray(plydata.elements[0]["x"]),
                         np.asarray(plydata.elements[0]["y"]),
                         np.asarray(plydata.elements[0]["z"])),  axis=1)
         opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
+        print("Number of points at initialisation : ", xyz.shape[0])
 
         features_dc = np.zeros((xyz.shape[0], 3, 1))
         features_dc[:, 0, 0] = np.asarray(plydata.elements[0]["f_dc_0"])
@@ -276,7 +279,8 @@ class GaussianModel:
         self._rotation = nn.Parameter(torch.tensor(rots, dtype=torch.float, device="cuda").requires_grad_(True))
 
         self.active_sh_degree = self.max_sh_degree
-        return self._xyz, self._features_dc, self._features_rest, self._opacity, self._scaling, self._rotation
+        self.max_radii2D = torch.zeros((xyz.shape[0]), device="cuda")
+        # return self._xyz, self._features_dc, self._features_rest, self._opacity, self._scaling, self._rotation
 
     def replace_tensor_to_optimizer(self, tensor, name):
         optimizable_tensors = {}

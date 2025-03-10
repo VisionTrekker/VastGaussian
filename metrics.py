@@ -55,7 +55,7 @@ def evaluate(model_paths):
             per_view_dict_polytopeonly[scene_dir] = {}
 
             test_dir = Path(scene_dir) / "test"
-            os.makedirs(Path(scene_dir) / "test" / "ours_60000" /"renders_cc", exist_ok=True)
+            os.makedirs(Path(scene_dir) / "test" / "ours_37000" /"renders_cc", exist_ok=True)
 
 
             for method in os.listdir(test_dir):
@@ -81,7 +81,7 @@ def evaluate(model_paths):
 
                     render = torch.tensor(render).permute(2, 0, 1).unsqueeze(0).contiguous().cuda()
                     cc_renders.append(render)
-                    torchvision.utils.save_image(render, os.path.join(scene_dir, "test/ours_60000/renders_cc", "{}".format(image_name)))
+                    torchvision.utils.save_image(render, os.path.join(scene_dir, "test/ours_37000/renders_cc", "{}".format(image_name)))
                 renders = cc_renders  # 更新为颜色修正后的图片
 
                 ssims = []

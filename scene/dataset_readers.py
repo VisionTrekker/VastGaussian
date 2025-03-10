@@ -257,7 +257,7 @@ def readColmapCamerasEval(cam_extrinsics, cam_intrinsics, images_folder, man_tra
         image_name = os.path.basename(image_path).split(".")[0]
         if image_name in test_camList:
             # 只读取测试机的图片
-            image = Image.open(image_path)
+            image = None
         else:
             continue
 
@@ -311,7 +311,7 @@ def storePly(path, xyz, rgb):
     ply_data = PlyData([vertex_element])
     ply_data.write(path)
 
-def readColmapSceneInfo(path, images, eval, llffhold=83):
+def readColmapSceneInfo(path, images, man_trans, eval, llffhold=83):
     # 读取所有图像的信息，包括相机内外参数，以及3D点云坐标
     try:
         cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.bin")   # 相机外参文件
@@ -326,7 +326,7 @@ def readColmapSceneInfo(path, images, eval, llffhold=83):
 
     reading_dir = "images" if images == None else images
     # 所有相机info：存储所有图片的 相机模型id，旋转矩阵 平移向量，视角场，图片数据，图片路径，图片名，图片宽高
-    cam_infos_unsorted = readColmapCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics, images_folder=os.path.join(path, reading_dir))
+    cam_infos_unsorted = readColmapCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics, images_folder=os.path.join(path, reading_dir), man_trans=man_trans)
     cam_infos = sorted(cam_infos_unsorted.copy(), key=lambda x: x.image_name)
 
     if eval:
